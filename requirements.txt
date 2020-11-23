@@ -1,0 +1,7 @@
+pdfquery
+numpy==1.19.3
+pandas
+wordcloud
+scikit-learn
+seaborn
+pyLDAvis

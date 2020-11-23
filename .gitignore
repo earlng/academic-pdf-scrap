@@ -129,5 +129,5 @@ dmypy.json
 .pyre/
 
 #xml files
-.xml
-!sample.xml
+/xml/*.xml
+!/xml/sample.xml
