@@ -1,0 +1,482 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<pdfx xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://pdfx.cs.man.ac.uk/static/article-schema.xsd">
+  <meta>
+    <job>f84a296d4555b8989de4f838e0e52503d87264d4b50448a08632bbc2a4c28848</job>
+    <base_name>1z9u</base_name>
+    <warning>Name identification was not possible. </warning>
+  </meta>
+  <article>
+    <front class="DoCO:FrontMatter">
+      <title-group>
+        <article-title class="DoCO:Title" id="1">Fast and Flexible Temporal Point Processes with Triangular Maps</article-title>
+      </title-group>
+      <region class="DoCO:TextChunk" id="3" confidence="possible">Oleksandr Shchur, Nicholas Gao, Marin Biloš, Stephan Günnemann Technical University of Munich, Germany <email id="2">{shchur,gaoni,bilos,guennemann}@in.tum.de</email></region>
+      <abstract class="DoCO:Abstract" id="4">Temporal point process (TPP) models combined with recurrent neural networks provide a powerful framework for modeling continuous-time event data. While such models are flexible, they are inherently sequential and therefore cannot benefit from the parallelism of modern hardware. By exploiting the recent developments in the field of normalizing flows, we design TriTPP— a new class of non-recurrent TPP models, where both sampling and likelihood computation can be done in parallel. TriTPP matches the flexibility of RNN-based methods but permits orders of magnitude faster sampling. This enables us to use the new model for variational inference in continuous-time discrete-state systems. We demonstrate the advantages of the proposed framework on synthetic and real-world datasets.</abstract>
+    </front>
+    <body class="DoCO:BodyMatter">
+      <section class="deo:Introduction">
+        <h1 class="DoCO:SectionTitle" id="5" page="1" column="1">1 Introduction</h1>
+      </section>
+      <region class="DoCO:TextChunk" id="9" page="1" column="1">Temporal data lies at the heart of many high-impact machine learning applications. Electronic health records, financial transaction ledgers and server logs contain valuable information. A common challenge encountered in all these settings is that both the number of events and their times are variable. The framework of temporal point processes (TPP) allows us to naturally handle data that consists of variable-number events in continuous time. Du et al. [<xref ref-type="bibr" rid="R1" id="6" class="deo:Reference">1</xref>] have shown that the flexibility of TPPs can be improved by combining them with recurrent neural networks (RNN). While such models are expressive and can achieve good results in various prediction tasks, they are poorly suited for sampling: sequential dependencies preclude parallelization. We show that it’s possible to overcome the above limitation and design flexible TPP models without relying on RNNs. For this, we use the framework of triangular maps [<xref ref-type="bibr" rid="R2" id="7" class="deo:Reference">2</xref>] and recent developments in the field of normalizing flows [<xref ref-type="bibr" rid="R3" id="8" class="deo:Reference">3</xref>]. Our main contributions are: (1) We propose a new parametrization for several classic TPPs. This enables efficient parallel likelihood computation and sampling, which was impossible with existing parametrizations. (2) We propose TriTPP— a new class of non-recurrent TPPs. TriTPP matches the flexibility of RNN-based methods, while allowing orders of magnitude faster sampling. (3) We derive a differentiable relaxation for non-differentiable sampling-based TPP losses. This allows us to design a new variational inference scheme for Markov jump processes.</region>
+      <section class="deo:Background">
+        <h1 class="DoCO:SectionTitle" id="10" page="1" column="1">2 Background</h1>
+      </section>
+      <region class="DoCO:TextChunk" id="16" page="1" column="1">Temporal point processes (TPP) [ <xref ref-type="bibr" rid="R4" id="11" class="deo:Reference">4</xref>] are stochastic processes that model the distribution of discrete events on some continuous time interval [0 , T ] . A realization of a TPP is a variable-length sequence of strictly increasing arrival times t = ( t 1 , . . . , t N ) , t i ∈ [0 , T ] . We make the standard assumption and focus our discussion on regular finite TPPs [<xref ref-type="bibr" rid="R4" id="12" class="deo:Reference">4</xref>]. One way to specify such a TPP is by using the (strictly positive) conditional intensity function λ ∗ ( t ) := λ ( t |H t ) that defines the rate of arrival of new events Code and datasets are available under www.daml.in.tum.de/triangular-tpp<marker type="page" number="2"/><marker type="block"/> given Equivalently, the history we can H t = consider { t j : t j the &lt; cumulative t } . The ∗ symbol conditional reminds intensity us of Λ the ∗ ( dependence t ) := Λ( t |H on t ) = the 0 history t λ ∗ ( u ) [<xref ref-type="bibr" rid="R5" id="15" class="deo:Reference">5</xref>]. du , also known as the compensator. 1 We can compute the likelihood of a realization t on [0 , T ] as</region>
+      <outsider class="DoCO:TextBox" type="footer" id="14" page="1" column="1">34th Conference on Neural Information Processing Systems (NeurIPS 2020), Vancouver, Canada.</outsider>
+      <disp-formula class="DoCO:FormulaBox" id="F1">
+        <label class="DoCO:Label" id="17">1</label>
+        <content class="DoCO:Formula" id="18" page="2" column="1">p ( t ) = i =1 N λ ∗ ( t i ) exp − 0 T λ ∗ ( u ) du = i =1 N ∂t ∂ Λ ∗ ( t i ) exp ( − Λ ∗ ( T ))</content>
+      </disp-formula>
+      <region class="DoCO:TextChunk" id="21" page="2" column="1">For example, we can use a TPP to model the online activity of a user in a 24-hour interval. In this case, each realization t could correspond to the timestamps of the posts by the user on a specific day. Triangular maps [<xref ref-type="bibr" rid="R2" id="19" class="deo:Reference">2</xref>] provide a framework that connects autoregressive models, normalizing flows and density estimation. Bogachev et al. [<xref ref-type="bibr" rid="R6" id="20" class="deo:Reference">6</xref>] have shown that any density p ( x ) on R N can be equivalently represented by another density p ( z ) on R N and an increasing differentiable triangular map F = ( f 1 , . . . , f N ) : R N → R N that pushes forward p into p . 2 A map F is called triangular if each component function f i depends only on ( x 1 , . . . , x i ) and is an increasing function of x i . Intuitively, we can think of F as converting a random variable x ∼ p into a random variable z := F ( x ) with a density p . We can compute the density p ( x ) using the change of variables formula</region>
+      <disp-formula class="DoCO:FormulaBox" id="F2">
+        <label class="DoCO:Label" id="22">2</label>
+        <content class="DoCO:Formula" id="23" page="2" column="1">N ∂ p ( x ) = | det J F ( x ) | p ( F ( x )) = ∂x i f i ( x 1 , . . . , x i ) p ( F ( x )) i =1</content>
+      </disp-formula>
+      <region class="DoCO:TextChunk" id="24" page="2" column="1">where det J F ( x ) is the Jacobian determinant of F at x . Here, we used the fact that J F ( x ) is a positive-definite lower-triangular matrix. To specify a complex density p ( x ) , we can pick some simple density p ( z ) and learn the triangular map F that pushes p into p . It’s important that F and its Jacobian determinant can be evaluated efficiently if we are learning p ( x ) via maximum likelihood. We can sample from p ( x ) by applying the inverse map F − 1 to the samples drawn from p ( z ) . Note that F − 1 : R N → R N is also an increasing differentiable triangular map. Fast computation of F − 1 is important when learning p ( x ) via sampling-based losses (e.g., in variational inference).</region>
+      <section class="DoCO:Section">
+        <h1 class="DoCO:SectionTitle" id="25" page="2" column="1">3 Defining temporal point processes using triangular maps</h1>
+        <region class="DoCO:TextChunk" id="27" page="2" column="1">We can notice the similarity between the right-hand sides of Equations 1 and 2, which seems to suggest some connection between TPPs and triangular maps. Indeed, it turns out that triangular maps can also be used to specify densities of point processes. Let t = ( t 1 , . . . , t N ) be a realization of a TPP on [0 , T ] with compensator Λ ∗ (i.e. with density p ( t ) ). The random time change theorem states that in this case z = (Λ ∗ ( t 1 ) , . . . , Λ ∗ ( t N )) is a realization of a homogeneous Poisson process (HPP) with unit rate on the interval [0 , Λ ∗ ( T )] [4, Theorem 7.4.I][5, Proposition 4.1] (<xref ref-type="fig" rid="F1" id="26" class="deo:Reference">Figure 1</xref>). The transformation F = ( f 1 , . . . , f N ) : t → z is an increasing triangular map. Each component ∂t ∂ i Λ ∗ function ( t i ) = λ f ∗ i ( ( t t i ) ) = &gt; 0 Λ( . The t i | t 1 number , . . . , t i − N 1 ) of only the depends component on functions ( t 1 , . . . , t i f ) i and depends is increasing on the length in t i of since the specific realization t . Notice that the term N i =1 ∂t ∂ i Λ ∗ ( t i ) in Equation 1 corresponds to the Jacobian determinant density of a of HPP F . with Similarly, unit rate the on second [0 , Λ ∗ term, ( T )] p for ( z ) any = realization p ( F ( t )) = z exp( . This − Λ demonstrates ∗ ( T )) , corresponds that all to TPP the densities (Equation 1) correspond to increasing triangular maps (Equation 2). As for the converse of this statement, every increasing triangular map that is bijective on the space of increasing sequences defines a valid TPP (see Appendix C.3). Our main idea is to define TPP densities p ( t ) by directly specifying the respective maps F . In Section 3.1, we show how maps that satisfy certain properties allow us to efficiently compute density and generate samples. We demonstrate this by designing a new parametrization for several established models in Section 3.2. Finally, we propose a new class of fast and flexible TPPs in Section 3.3.</region>
+        <section class="DoCO:Section">
+          <h2 class="DoCO:SectionTitle" id="28" page="2" column="1">3.1 Requirements for efficient TPP models</h2>
+          <region class="DoCO:TextChunk" id="29" page="2" column="1">Density evaluation. The time complexity of computing the density p ( t ) for various TPP models can computing be understood F ( t by ) takes analyzing O ( N the 2 ) operations. respective map For F example, . For a general this holds triangular for Hawkes map F processes : R N → with R N , 1 For convenience, we provide a list of abbreviations and notation used in the paper in Appendix A. 2 Note that some other works instead define F as the map that pushes the density p ( z ) into p ( x ) .</region>
+          <outsider class="DoCO:TextBox" type="page_nr" id="30" page="2" column="1">2</outsider>
+          <region class="DoCO:FigureBox" id="F1">
+            <caption class="deo:Caption" id="31" page="3" column="1">Figure 1: Triangular map F ( t ) = (Λ ∗ ( t 1 ) , ..., Λ ∗ ( t N ))</caption>
+          </region>
+          <region class="DoCO:TextChunk" id="41" confidence="possible" page="3" column="1">arbitrary kernels [<xref ref-type="bibr" rid="R7" id="32" class="deo:Reference">7</xref>]. If the compensator Λ ∗ has Markov property, the complexity of evaluating F can be reduced to O ( N ) sequen- Λ ∗ ( T ) Λ ∗ tial operations. This class of models includes Hawkes processes with exponential kernels [<xref ref-type="bibr" rid="R8" id="33" class="deo:Reference">8</xref>, <xref ref-type="bibr" rid="R9" id="34" class="deo:Reference">9</xref>] and RNN-based autoregressive TPPs Λ ∗ ( t 2 ) [<xref ref-type="bibr" rid="R1" id="35" class="deo:Reference">1</xref>, <xref ref-type="bibr" rid="R10" id="36" class="deo:Reference">10</xref>, <xref ref-type="bibr" rid="R11" id="37" class="deo:Reference">11</xref>]. Unfortunately, such models do not benefit from the Λ ∗ ( t 1 ) parallelism of modern hardware. Defining an efficient TPP model will require specifying a forward map F that can be computed in O ( N ) parallel operations. t 1 t 2 T Sampling. As a converse of the random time change theorem, we can sample from a TPP density p ( t ) by first drawing z from an HPP on [0 , Λ ∗ ( T )] and applying the inverse map, t = F − 1 ( z ) [<xref ref-type="bibr" rid="R4" id="38" class="deo:Reference">4</xref>]. There is used for computing p ( t ) . are, however, several caveats to this method. Not all parametrizations of F allow computing F − 1 ( z ) in closed form. Even if F − 1 is available, the number its evaluation of points for N most that models will be is generated again sequential (and thus [1, Λ 9]. ∗ ( T Lastly, ) for z 3 Discard t i &gt; T Λ ∗ HPP) is not known in advance. Therefore, existing methods typically resort to generating the samples one by one [5, Algorithm 4.1]. We z 2 show that it’s possible to do better than this. If the inverse map F − 1 z 1 can be applied in parallel, we can produce large batches of samples t i , and then discard the points t i &gt; T (<xref ref-type="fig" rid="F2" id="39" class="deo:Reference">Figure 2</xref>). Even though this method may produce samples that are later discarded, it is much t 1 t 2 T t 3 more efficient than sequential generation on GPUs (Section 6.1). <xref ref-type="fig" rid="F2" id="40" class="deo:Reference">Figure 2</xref>: Sampling is done by applying F − 1 to a sample z To summarize, defining a TPP efficient for both density computation from a HPP with unit rate. and sampling requires specifying a triangular map F , such that both F and its inverse F − 1 can be evaluated analytically in O ( N ) parallel operations. We will now show that maps corresponding to several classic TPP models can be defined to satisfy these criteria.</region>
+          <region class="unknown" id="42" page="3" column="1">3.2 Fast temporal point process models</region>
+          <region class="DoCO:TextChunk" id="49" page="3" column="1">Inhomogeneous Poisson process (IPP) [<xref ref-type="bibr" rid="R4" id="43" class="deo:Reference">4</xref>] is a TPP whose conditional intensity doesn’t depend on the history, Λ( t |H t ) = Λ( t ) . The corresponding map is F = Λ , where Λ simply applies the function Λ : [0 , T ] → R + elementwise to the sequence ( t 1 , ..., t N ) . Renewal process (RP) [<xref ref-type="bibr" rid="R12" id="44" class="deo:Reference">12</xref>] is a TPP where each inter-event time t i − t i − 1 is sampled i.i.d. from the same distribution with the cumulative i hazard function Φ : R + → R + . The compensator of an RP is Λ( t |H t ) = Φ( t − t i ) + j =1 Φ( t j − t j − 1 ) , where t i is the last event before t . The triangular map of difference an RP can matrix, be represented C ≡ D − 1 as ∈ a R composition N × N is the cumulative F = C ◦ Φ sum ◦ D matrix, , where and D Φ ∈ applies R N × N Φ is elementwise. the pairwise Modulated renewal process (MRP) [<xref ref-type="bibr" rid="R13" id="45" class="deo:Reference">13</xref>] generalizes both inhomogeneous Poisson and renewal i processes. The cumulative intensity is Λ( t |H t ) = Φ(Λ( t ) − Λ( t i )) + j =1 Φ(Λ( t j ) − Λ( t j − 1 )) . Again, we can represent the triangular map of an MRP as a composition, F = C ◦ Φ ◦ D ◦ Λ . All three above models permit fast density evaluation and sampling. Since Φ and Λ (as well as their inverses Φ − 1 and Λ − 1 ) are elementwise transformations, they can obviously be applied in O ( N ) parallel operations. Same holds for multiplication by the matrix D , as it is bidiagonal. Finally, the cumulative sum defined by C can also be computed in parallel in O ( N ) [<xref ref-type="bibr" rid="R14" id="46" class="deo:Reference">14</xref>]. Therefore, by reformulating IPP, RP and MRP using triangular maps, we can satisfy our efficiency requirements. Parametrization for Φ and Λ must satisfy several conditions. First, to define a valid TPP, Φ and Λ have to be positive, strictly increasing and differentiable. Next, both functions, their derivatives (for density computation) and inverses (for sampling) must be computable in closed form to meet the efficiency requirements. Lastly, we want both functions to be highly flexible. Constructing such functions is not trivial. While IPP, RP and MRP are established models, none of their existing parametrizations satisfy all the above conditions simultaneously. Luckily, the same properties are necessary when designing normalizing flows [<xref ref-type="bibr" rid="R15" id="47" class="deo:Reference">15</xref>]. Recently, Durkan et al. [<xref ref-type="bibr" rid="R3" id="48" class="deo:Reference">3</xref>] used rational quadratic splines (RQS) to define functions that satisfy our requirements. We propose to use RQS to define Φ and Λ for (M)RP and IPP. This parametrization is flexible, while also allowing efficient density evaluation and sampling — something that existing approaches are unable to provide (see Section 5).</region>
+          <outsider class="DoCO:TextBox" type="page_nr" id="50" page="3" column="1">3</outsider>
+          <region class="unknown" id="51" page="4" column="1">C Φ 2 B L B 1 Φ 1 D Λ</region>
+          <region class="unknown" id="52" page="4" column="1">...</region>
+          <region class="unknown" id="53" page="4" column="1">Jacobian of each transform</region>
+          <region class="DoCO:FigureBox" id="F3">
+            <image class="DoCO:Figure" src="1z9u.page_004.image_01.png" thmb="1z9u.page_004.image_01-thumb.png"/>
+            <image class="DoCO:Figure" src="1z9u.page_004.image_02.png" thmb="1z9u.page_004.image_02-thumb.png"/>
+            <image class="DoCO:Figure" src="1z9u.page_004.image_03.png" thmb="1z9u.page_004.image_03-thumb.png"/>
+            <image class="DoCO:Figure" src="1z9u.page_004.image_04.png" thmb="1z9u.page_004.image_04-thumb.png"/>
+            <image class="DoCO:Figure" src="1z9u.page_004.image_05.png" thmb="1z9u.page_004.image_05-thumb.png"/>
+            <image class="DoCO:Figure" src="1z9u.page_004.image_06.png" thmb="1z9u.page_004.image_06-thumb.png"/>
+            <image class="DoCO:Figure" src="1z9u.page_004.image_07.png" thmb="1z9u.page_004.image_07-thumb.png"/>
+            <caption class="deo:Caption" id="55" page="4" column="1">Figure 3: TriTPP defines an expressive map F as a composition of easy-to-invert transformations.</caption>
+          </region>
+        </section>
+        <section class="DoCO:Section">
+          <h2 class="DoCO:SectionTitle" id="56" page="4" column="1">3.3 Defining more flexible triangular maps</h2>
+          <region class="DoCO:TextChunk" id="60" page="4" column="1">Even though the splines can make the functions Φ and Λ arbitrarily flexible, the overall expressiveness of MRP is still limited. Its conditional intensity λ ∗ ( t ) depends only on the global time and the time since the last event. This means, MRP cannot capture, e.g., self-exciting [<xref ref-type="bibr" rid="R7" id="57" class="deo:Reference">7</xref>] or self-correcting [<xref ref-type="bibr" rid="R16" id="58" class="deo:Reference">16</xref>] behavior. We will now construct a model that is more flexible without sacrificing the efficiency. The efficiency of the MRP stems from the fact that the respective triangular map F is defined as a composition of easy-to-invert transformations. More specifically, we are combining learnable element-wise nonlinear transformations Φ and Λ with fixed lower-triangular matrices D and C . We can make the map F more expressive by adding learnable lower-triangular matrices into the composition. inversion are O Using ( N 2 ) full ), and N also × N would lower not triangular work for matrices variable-length would be sequences inefficient (i.e., (multiplication arbitrary values and of lower-triangular multiplication N ). Instead, by matrix we B l define or B with l − 1 block-diagonal strictly can be done positive in matrices O diagonal ( N H ) B in entries. l , parallel. where Computing each We stack block L B is l such − 1 a takes repeated matrices O ( H H B 2 ) l × , and and H define the triangular map F = C ◦ Φ 2 ◦ B L ◦ · · · ◦ B 1 ◦ Φ 1 ◦ D ◦ Λ . The blocks in every other layer are shifted by an offset H/ 2 to let the model capture long-range dependencies. Note that now we use two element-wise learnable splines Φ 1 and Φ 2 before and after the block-diagonal layers. <xref ref-type="fig" rid="F3" id="59" class="deo:Reference">Figure 3</xref> visualizes the overall sequence of maps and the Jacobians of each transformation. We name the temporal point process densities defined by the triangular map F as TriTPP. Both the forward map F and its inverse F − 1 can be evaluated in parallel in linear time, making TriTPP efficient for density computation and sampling. Our insight that TPP densities can be represented by increasing triangular maps was crucial for arriving at this result. Alternative representations of TriTPP, e.g., in terms of the compensator Λ ∗ or the conditional intensity λ ∗ , are cumbersome and do not emphasize the parallelism of the model. TriTPP and our parametrizations of IPP, RP, MRP can be efficiently implemented on GPU to handle batches of variable-length sequences (Appendix C).</region>
+        </section>
+      </section>
+      <section class="DoCO:Section">
+        <h1 class="DoCO:SectionTitle" id="61" page="4" column="1">4 Differentiable sampling-based losses for temporal point processes</h1>
+        <region class="DoCO:TextChunk" id="65" page="4" column="1">Fast parallel sampling allows us to efficiently answer prediction queries such as "How many events are expected to happen in the next hour given the history?". More importantly, it enables us to efficiently train TPP models using objective functions of the form E p [ g ( t )] . This includes using p ( t ) to specify the policy in reinforcement learning [<xref ref-type="bibr" rid="R17" id="62" class="deo:Reference">17</xref>], to impute missing data during training [<xref ref-type="bibr" rid="R11" id="63" class="deo:Reference">11</xref>] or to define an approximate posterior in variational inference (Section 4.2). In all but trivial cases the expression E p [ g ( t )] has no closed form, so we need to estimate its gradients w.r.t. the parameters of p ( t ) using Monte Carlo (MC). Recall that we can sample from p ( t ) by applying the map F − 1 to z drawn from an HPP with unit rate. This enables the so-called reparametrization trick [<xref ref-type="bibr" rid="R18" id="64" class="deo:Reference">18</xref>]. Unfortunately, this is not enough. Sampling-based losses for TPPs are in general not differentiable. This is a property of the loss functions that is independent of the parametrization of p ( t ) or the sampling method. In the following, we provide a simple example and a solution to this problem.</region>
+        <section class="DoCO:Section">
+          <h2 class="DoCO:SectionTitle" id="66" page="4" column="1">4.1 Entropy maximization</h2>
+          <region class="DoCO:TextChunk" id="69" page="4" column="1">Consider the problem of maximizing the entropy of a TPP. An entropy penalty can be used as a regularizer during density estimation [<xref ref-type="bibr" rid="R19" id="67" class="deo:Reference">19</xref>] or as a part of the ELBO in variational inference. Let p λ ( t ) be a homogeneous Poisson process on [0 , T ] with rate λ &gt; 0 . It is known that the entropy is maximized when λ = 1 [<xref ref-type="bibr" rid="R20" id="68" class="deo:Reference">20</xref>], but for sake of example assume that we want to learn λ that maximizes the z = entropy ( z 1 , z 2 − , ... E ) p [log from p λ a ( t HPP )] with with gradient unit rate ascent. and applying We sample the from inverse p λ ( map t ) by t drawing = F λ − 1 a ( z sequence ) = λ 1 z</region>
+          <outsider class="DoCO:TextBox" type="page_nr" id="70" page="4" column="1">4</outsider>
+          <region class="unknown" id="71" page="5" column="1">entropy 1 . 0 entropy 0 2 s i state o j observation − 2 0 . 5 Estimated γ = 0 . 05 Estimated − 4 No γ = relaxation 10 − 4 0 . 0 No relaxation − 6 γ = 10 − 1 1 0 1 2 3 0 100 200 300 400 0 5 10 15 20 λ Iteration Time</region>
+          <region class="DoCO:FigureBox" id="F4">
+            <caption class="deo:Caption" id="72" page="5" column="1">Figure 4: Monte Carlo estimate Figure 5: Maximizing the entropy Figure 6: Markov modulated of the entropy. with different values of γ . Poisson process with 2 states.</caption>
+          </region>
+          <region class="DoCO:TextChunk" id="74" confidence="possible" page="5" column="1"> (<xref ref-type="fig" rid="F2" id="73" class="deo:Reference">Figure 2</xref>). We obtain an MC estimate of the entropy using a single such sample t = ( t 1 , t 2 , ... ) as</region>
+          <disp-formula class="DoCO:FormulaBox" id="F3">
+            <label class="DoCO:Label" id="75">3</label>
+            <content class="DoCO:Formula" id="76" page="5" column="1">∞ ∞ 1 − E p [log p λ ( t )] ≈ λT − 1 ( t i ≤ T ) log λ = λT − 1 λ z i ≤ T log λ i =1 i =1</content>
+          </disp-formula>
+          <region class="DoCO:TextChunk" id="80" page="5" column="1">Here, right-hand the indicator side of Equation function 3 1 ( is · ) not discards continuous all the w.r.t. events λ at t i points &gt; T . We λ = can T 1 z see i . At that such for points, any sample decreasing z the λ by an infinitesimal amount will "push" the sample t i = λ 1 z i outside the [0 , T ] interval, thus increasing log p λ ( t ) by a constant log λ . We plot the right-hand side of Equation 3 as a function of λ in <xref ref-type="fig" rid="F4" id="77" class="deo:Reference">Figure 4</xref>, estimated with 5 MC samples. Clearly, such function cannot be optimized with gradient ascent. Increasing the number of MC samples almost surely adds more points of discontinuity and does not fix the problem. In general, non-differentiability arises when estimating expectations of a function g ( t ) that depends on the events t i inside [0 , T ] . For any TPP density p ( t ) , the discontinuities occur at the parameter values that map the HPP realizations z i exactly to the interval boundary T . Relaxation. We obtain a differentiable approximation to Equation 3 by relaxing the indicator functions as 1 ( t i ≤ T ) ≈ σ γ ( T − t i ) , where σ γ ( x ) = 1 / (1 + exp( − x/γ )) is the sigmoid function with a temperature parameter γ &gt; 0 . Decreasing the temperature γ makes the approximation more accurate, but complicates optimization, similarly to the Gumbel-softmax trick [<xref ref-type="bibr" rid="R21" id="78" class="deo:Reference">21</xref>]. <xref ref-type="fig" rid="F5" id="79" class="deo:Reference">Figure 5</xref> shows convergence plots for different values of γ . Our relaxation applies to MC estimation of any function g ( t ) that can be expressed in terms of the indicator functions. This method also enables differentiable sampling with reparametrization from a Poisson distribution, which might be of independent interest.</region>
+        </section>
+        <section class="DoCO:Section">
+          <h2 class="DoCO:SectionTitle" id="81" page="5" column="1">4.2 Variational inference for Markov jump processes</h2>
+          <region class="DoCO:TextChunk" id="86" page="5" column="1">Combining fast sampling (Section 3) with the differentiable relaxation opens new applications for TPPs. As an example, we design a variational inference scheme for Markov jump processes. Background. A Markov jump process (MJP) { s ( t ) } t ≥ 0 is a piecewise-constant stochastic process on R + . At any time t , the process occupies a discrete state s ( t ) ∈ { 1 , ..., K } . The times when the state changes are called jumps. A trajectory of an MJP on an interval [0 , T ] with N jumps can be represented by a tuple ( t , s ) of jump times t = ( t 1 , ..., t N ) and the visited states s = ( s 1 , ..., s N +1 ) . Note that N may vary for different trajectories. The prior over the trajectories p ( t , s | π , A ) of an MJP is governed by an initial state distribution π and a K × K generator matrix A (see Appendix B.1). MJPs are commonly used to model the unobserved (latent) state of a system. In a latent MJP, the state s ( t ) influences the behavior of the system and indirectly manifests itself via some observations o . For concreteness, we consider the Markov-modulated Poisson process (MMPP) [<xref ref-type="bibr" rid="R22" id="82" class="deo:Reference">22</xref>]. In an MMPP, each of the K states of the MJP has an associated observation intensity λ k . An MMPP is an inhomogeneous Poisson process where the intensity depends on the current MJP state as λ ( t ) = λ s ( t ) . For instance, a 2-state MMPP can model the behavior of a social network user, who switches between an "active" (posting a lot) and "inactive" (working or sleeping) states (<xref ref-type="fig" rid="F6" id="83" class="deo:Reference">Figure 6</xref>). Given the observations o , we might be interested in inferring the trajectory ( t , s ) , the model parameters θ = { π , A , λ } , or both. Variational inference. The posterior distribution p ( t , s | o , θ ) of MMPP is intractable, so we approximate it with a variational distribution q ( t , s ) = q ( t ) q ( s | t ) . Note that this is not a mean-field approximation used in other works [<xref ref-type="bibr" rid="R23" id="84" class="deo:Reference">23</xref>]. We model the distribution over the jump times q ( t ) with TriTPP (Section 3.3). We find the best approximate posterior by maximizing the ELBO [<xref ref-type="bibr" rid="R24" id="85" class="deo:Reference">24</xref>]</region>
+          <disp-formula class="DoCO:FormulaBox" id="F4">
+            <label class="DoCO:Label" id="87">4</label>
+            <content class="DoCO:Formula" id="88" page="5" column="1">max max E E [log p ( o | t , s , θ ) + log p ( t , s | θ ) − log q ( t , s )]</content>
+          </disp-formula>
+          <disp-formula class="DoCO:FormulaBox" id="F4">
+            <label class="DoCO:Label" id="89">4</label>
+            <content class="DoCO:Formula" id="90" page="5" column="1">q ( t ) q ( s | t ) q ( t ) q ( s | t )</content>
+          </disp-formula>
+          <outsider class="DoCO:TextBox" type="page_nr" id="91" page="5" column="1">5</outsider>
+          <region class="DoCO:TextChunk" id="92" page="6" column="1">Given jump times t , the true posterior over the states p ( s | t , o , θ ) is just the posterior of a discrete hidden Markov model (HMM). This means that we only need to model q ( t ) ; the optimal q ( s | t ) , i.e.</region>
+          <disp-formula class="DoCO:FormulaBox" id="F5">
+            <label class="DoCO:Label" id="93">5</label>
+            <content class="DoCO:Formula" id="94" page="6" column="1">q ( s | t ) = arg max E [log p ( o | t , s , θ ) + log p ( t , s | θ ) − log q ( s | t )] = p ( s | t , o , θ ) q ( s | t )</content>
+          </disp-formula>
+          <disp-formula class="DoCO:FormulaBox" id="F5">
+            <label class="DoCO:Label" id="95">5</label>
+            <content class="DoCO:Formula" id="96" page="6" column="1">q ( s | t )</content>
+          </disp-formula>
+          <region class="DoCO:TextChunk" id="99" page="6" column="1">can be found by doing inference in an HMM — doable efficiently via the forward-backward algorithm [<xref ref-type="bibr" rid="R25" id="97" class="deo:Reference">25</xref>]. The inner expectation w.r.t. q ( s | t ) in Equation 4 can be computed analytically. We approximate the expectation w.r.t. q ( t ) with Monte Carlo. Since all terms of Equation 4 are not differentiable, we apply our relaxation from Section 4.1. We provide a full derivation of the ELBO and the implementation details in Appendix B.2. The proposed framework is not limited to approximating the posterior over the trajectories. With small modifications (Appendix B.3), we can simultaneously learn the parameters θ , either obtaining a point estimate θ or a full approximate posterior q ( θ ) . Our variational inference scheme can also be extended to other continuous-time discrete-state models, such as semi-Markov processes [<xref ref-type="bibr" rid="R26" id="98" class="deo:Reference">26</xref>].</region>
+        </section>
+      </section>
+      <section class="deo:RelatedWork">
+        <h1 class="DoCO:SectionTitle" id="100" page="6" column="1">5 Related work</h1>
+        <region class="DoCO:TextChunk" id="138" page="6" column="1">Triangular maps [ <xref ref-type="bibr" rid="R2" id="101" class="deo:Reference">2</xref>] can be seen as a generalization of autoregressive normalizing flows [<xref ref-type="bibr" rid="R27" id="102" class="deo:Reference">27</xref>, <xref ref-type="bibr" rid="R28" id="103" class="deo:Reference">28</xref>, <xref ref-type="bibr" rid="R15" id="104" class="deo:Reference">15</xref>]. Existing normalizing flow models are either limited to fixed-dimensional data [<xref ref-type="bibr" rid="R29" id="105" class="deo:Reference">29</xref>, <xref ref-type="bibr" rid="R30" id="106" class="deo:Reference">30</xref>] or are inherently sequential [<xref ref-type="bibr" rid="R31" id="107" class="deo:Reference">31</xref>, <xref ref-type="bibr" rid="R32" id="108" class="deo:Reference">32</xref>]. Our model proposed in Section 3.3 can handle variable-length inputs, and allows for both F and F − 1 to be evaluated efficiently in parallel. Sampling from TPPs. Inverse method for sampling from inhomogeneous Poisson processes can be dated back to Çinlar [<xref ref-type="bibr" rid="R33" id="109" class="deo:Reference">33</xref>]. However, traditional inversion methods for IPPs are different from our approach (Section 3). First, they are typically sequential. Second, existing methods either use extremely basic compensators Λ( t ) , such as λt or e αt , or require numerical inversion [<xref ref-type="bibr" rid="R34" id="110" class="deo:Reference">34</xref>]. As an alternative to inversion, thinning approaches [<xref ref-type="bibr" rid="R35" id="111" class="deo:Reference">35</xref>] became the dominant paradigm for generating IPPs, and TPPs in general. Still, sampling via thinning has a number of disadvantages. Thinning requires a piecewise-constant upper bound on λ ( t ) , which might not always be easy to find. If the bound is not tight, a large fraction of samples will be rejected. Moreover, thinning is not differentiable, doesn’t permit reparametrization, and is hard to express in terms of parallel operations on tensors [<xref ref-type="bibr" rid="R36" id="112" class="deo:Reference">36</xref>]. Our inversion-based sampling addresses all the above limitations. It’s also possible to generate an IPP by first drawing N ∼ Poisson(Λ( T )) and then sampling N points t i i.i.d. from a density p ( t ) = λ ( t ) / Λ( T ) [<xref ref-type="bibr" rid="R37" id="113" class="deo:Reference">37</xref>]. Unlike inversion, this method is only applicable to Poisson processes. Also, the operation of sampling N is not differentiable, which limits the utility of this approach. Inhomogeneous Poisson processes are commonly defined by specifying the intensity function λ ( t ) via a latent Gaussian process [<xref ref-type="bibr" rid="R38" id="114" class="deo:Reference">38</xref>]. Such models are flexible, but highly intractable. It’s possible to devise approximations by, e.g., bounding the intensity function [<xref ref-type="bibr" rid="R39" id="115" class="deo:Reference">39</xref>, <xref ref-type="bibr" rid="R40" id="116" class="deo:Reference">40</xref>]. Our spline parametrization of IPP compares favorably to the above models: it is also highly flexible, has a tractable likelihood and places no restrictions on the intensity. Importantly, it is much easier to implement and train. If uncertainty is of interest, we can perform approximate Bayesian inference on the spline coefficients [<xref ref-type="bibr" rid="R24" id="117" class="deo:Reference">24</xref>]. Recently, Morgan et al. [<xref ref-type="bibr" rid="R41" id="118" class="deo:Reference">41</xref>] used splines to model the intensity function of IPPs. Since Λ − 1 cannot be computed analytically for their model, sampling via thinning is the only available option. Modulated renewal processes have been known for a long time [<xref ref-type="bibr" rid="R13" id="119" class="deo:Reference">13</xref>, <xref ref-type="bibr" rid="R42" id="120" class="deo:Reference">42</xref>], but haven’t become as popular as IPPs among practitioners. This is not surprising, since inference and sampling in MRPs are even more challenging than in Cox processes [<xref ref-type="bibr" rid="R43" id="121" class="deo:Reference">43</xref>, <xref ref-type="bibr" rid="R44" id="122" class="deo:Reference">44</xref>]. Our proposed parametrization addresses the shortcomings of existing approaches and makes MRPs straightforward to apply in practice. Neural TPPs. Du et al. [<xref ref-type="bibr" rid="R1" id="123" class="deo:Reference">1</xref>] proposed a TPP model based on a recurrent neural network. Follow-up works improved the flexibility of RNN-based TPPs by e.g. changing the RNN architecture [<xref ref-type="bibr" rid="R45" id="124" class="deo:Reference">45</xref>], using more expressive conditional hazard functions [<xref ref-type="bibr" rid="R10" id="125" class="deo:Reference">10</xref>, <xref ref-type="bibr" rid="R46" id="126" class="deo:Reference">46</xref>] or modeling the inter-event time distribution with normalizing flows [<xref ref-type="bibr" rid="R11" id="127" class="deo:Reference">11</xref>]. All the above models are inherently sequential and therefore inefficient for sampling (Section 6.1). Recently, Turkmen et al. [<xref ref-type="bibr" rid="R36" id="128" class="deo:Reference">36</xref>] proposed to speed up RNN-based marked TPPs by discretizing the interval [0 , T ] into a regular grid. Samples within each grid cell can be produced in parallel for each mark, but the cells themselves still must be processed sequentially. Latent space models. TPPs governed by latent Markov dynamics have intractable likelihoods that require approximations [<xref ref-type="bibr" rid="R47" id="129" class="deo:Reference">47</xref>, <xref ref-type="bibr" rid="R48" id="130" class="deo:Reference">48</xref>]. For MJPs, the state-of-the-art approach is the Gibbs sampler by Rao &amp; Teh [<xref ref-type="bibr" rid="R49" id="131" class="deo:Reference">49</xref>]. It allows to exactly sample from the posterior p ( t , s | o , θ ) , but is known to converge<marker type="page" number="7"/><marker type="block"/> slowly if the parameters θ are to be learned as well [<xref ref-type="bibr" rid="R50" id="134" class="deo:Reference">50</xref>]. Existing variational inference approaches for MJPs can only learn a fixed time discretization [<xref ref-type="bibr" rid="R23" id="135" class="deo:Reference">23</xref>] or estimate the marginal statistics of the posterior [<xref ref-type="bibr" rid="R51" id="136" class="deo:Reference">51</xref>, <xref ref-type="bibr" rid="R52" id="137" class="deo:Reference">52</xref>]. In contrast, our method (Section 4.2) produces a full distribution over the jump times.</region>
+        <outsider class="DoCO:TextBox" type="page_nr" id="133" page="6" column="1">6</outsider>
+      </section>
+      <section class="DoCO:Section">
+        <h1 class="DoCO:SectionTitle" id="139" page="7" column="1">6 Experiments</h1>
+        <region class="unknown" id="140" page="7" column="1">2</region>
+        <region class="unknown" id="141" page="7" column="1">TriTPP RNN</region>
+        <region class="unknown" id="142" page="7" column="1">1</region>
+        <region class="unknown" id="143" page="7" column="1">0 i 4</region>
+        <region class="unknown" id="144" page="7" column="1">TriTPP RNN</region>
+        <region class="unknown" id="145" page="7" column="1">3</region>
+        <region class="unknown" id="146" page="7" column="1">2</region>
+        <region class="unknown" id="147" page="7" column="1">i i − 1</region>
+        <region class="unknown" id="148" page="7" column="1">25 50 100 200 400 800 1600</region>
+        <region class="DoCO:FigureBox" id="F7">
+          <caption class="deo:Caption" id="149" page="7" column="1">Figure 7: Scalability analysis.</caption>
+        </region>
+        <section class="DoCO:Section">
+          <h2 class="DoCO:SectionTitle" id="158" page="7" column="1">6.1 Scalability Setup. The key feature of TriTPP is its ability to compute likelihood and generate samples in parallel, which is impossible for RNN-based models. We quantify this difference by measuring the runtime of the two models. We implemented TriTPP and RNN models in PyTorch [<xref ref-type="bibr" rid="R53" id="150" class="deo:Reference">53</xref>]. The architecture of the RNN model is nearly identical to the ones used in [<xref ref-type="bibr" rid="R1" id="151" class="deo:Reference">1</xref>, <xref ref-type="bibr" rid="R10" id="152" class="deo:Reference">10</xref>, <xref ref-type="bibr" rid="R11" id="153" class="deo:Reference">11</xref>], except that the cumulative conditional hazard function is parametrized with a spline [<xref ref-type="bibr" rid="R3" id="154" class="deo:Reference">3</xref>] to enable closed-form sampling. Appendix E contains the details for this and other experiments. We measure the runtime of (a) computing the log-likelihood (and backpropagate the gradients) for a batch of 100 sequences of varying lengths and (b) sample sequences of the same sizes. We used a machine with an Intel Xeon E5-2630 v4 @ 2.20 GHz CPU, 256GB RAM and an Nvidia GTX1080Ti GPU. The results are averaged over 100 runs. Results. <xref ref-type="fig" rid="F7" id="155" class="deo:Reference">Figure 7</xref> shows the runtimes for varying sequence lengths. 10 Training is rather fast for both models, on average taking 1-10ms per ms iteration. RNN is slightly faster for short sequences, but is outper- time, 10 formed by TriTPP on sequences with more than 400 events. Note Training that during training we used a highly optimized RNN implementa- 10 tion based on custom CUDA kernels (since all the event times t are 10 already known). In contrast, TriTPP is implemented using generic ms PyTorch operations. When it comes to sampling, we notice a mas- time, 10 happens sive gap because in performance RNN-based between TPPs TriTPP are defined and the autoregressively RNN model. This and Sampling 10 can only produce samples t i one by one: to obtain p ( t | t 1 , ..., t 1 ) 10 we must know all the past events. Recently proposed transformer Sequence Length TPPs [<xref ref-type="bibr" rid="R54" id="156" class="deo:Reference">54</xref>, <xref ref-type="bibr" rid="R55" id="157" class="deo:Reference">55</xref>] are defined in a similar autoregressive way, so they are likely to be as slow for sampling as RNNs. TriTPP generates all the events in a sequence in parallel, which makes it more than 100 Standard devs. are below 1ms. times faster than the recurrent model for longer sequences. 6.2 Density estimation</h2>
+          <region class="DoCO:TextChunk" id="178" page="7" column="1">Setup. A fast TPP model is of little use if it cannot accurately learn the data distribution. The main goal of this experiment is to establish whether TriTPP can match the flexibility of RNN-based TPPs. As baselines, we use the IPP, RP and MRP models from Section 3.2 and Hawkes process [ <xref ref-type="bibr" rid="R56" id="159" class="deo:Reference">56</xref>]. Datasets. We use 6 synthetic datasets from Omi et al. [<xref ref-type="bibr" rid="R10" id="160" class="deo:Reference">10</xref>]: Hawkes1&amp;2 [<xref ref-type="bibr" rid="R7" id="161" class="deo:Reference">7</xref>], self-correcting (SC) [<xref ref-type="bibr" rid="R16" id="162" class="deo:Reference">16</xref>], inhomogeneous Poisson (IPP), renewal (RP) and modulated renewal (MRP) processes. Note that the data generators for IPP, RP and MRP by Omi et al. are not parametrized using splines, so these datasets are not guaranteed to be fitted perfectly by our models. We also consider 7 real-world datasets: PUBG (online gaming), Reddit-Comments, Reddit-Submissions (online discussions), Taxi (customer pickups), Twitter (tweets) and Yelp1&amp;2 (check-in times). See Appendix D for more details. Metrics. The standard metric for comparing generative models, including TPPs, is negative log- likelihood (NLL) on a hold-out set [<xref ref-type="bibr" rid="R36" id="163" class="deo:Reference">36</xref>, <xref ref-type="bibr" rid="R10" id="164" class="deo:Reference">10</xref>, <xref ref-type="bibr" rid="R11" id="165" class="deo:Reference">11</xref>]. We partitioned the sequences in each dataset into train/validation/test sequences (60%/20%/20%). We trained the models by minimizing the NLL of the train set using Adam [<xref ref-type="bibr" rid="R57" id="166" class="deo:Reference">57</xref>]. We tuned the following hyperparameters: L 2 regularization { 0 , 10 − 5 , 10 − 4 , 10 − 3 } , number of spline knots { 10 , 20 , 50 } , learning rate { 10 − 3 , 10 − 2 } , hidden size { 32 , 64 } for RNN, number of blocks { 2 , 4 } and block size { 8 , 16 } for TriTPP. We used the validaiton set for hyperparameter tuning, early stopping and model development. We computed the results for the test set only once before including them in the paper. All results are averaged over 5 runs. While NLL is a popular metric, it has known failure modes [<xref ref-type="bibr" rid="R58" id="167" class="deo:Reference">58</xref>]. For this reason, we additionally computed maximum mean discrepancy (MMD) [<xref ref-type="bibr" rid="R59" id="168" class="deo:Reference">59</xref>] between the test sets and the samples drawn from each model after training. To measure similarity between two realizations t and t , we use a Gaussian kernel k ( t , t ) = exp( − d ( t , t ) / 2 σ 2 ) , where d ( t , t ) is the "counting measure" distance from [60,<marker type="page" number="8"/><marker type="block"/> Equation 3]. For completeness, we provide the definitions in Appendix E.2. MMD quantifies the dissimilarity between the true data distribution p ( t ) and the learned density p ( t ) — lower is better. Results. <xref ref-type="table" rid="T1" id="175" class="deo:Reference">Table 1</xref> shows the test set NLLs for all models and datasets. We can see that the RNN model achieves excellent scores and outperforms the simpler baselines, which is consistent with earlier findings [<xref ref-type="bibr" rid="R1" id="176" class="deo:Reference">1</xref>]. TriTPP is the only method that is competitive with the RNN — our method is within 0.05 nats of the best score on 11 out of 13 datasets. TriTPP consistently beats MRP, RP and IPP, which confirms that learnable block-diagonal transformations improve the flexibility of the model. The gap get larger on the datasets such as Hawkes, SC, PUBG and Twitter, where the inability of MRP to learn self-exciting and self-correcting behavior is especially detrimental. While Hawkes process is able to achieve good scores on datasets with "bursty" event occurrences (Reddit, Twitter), it is unable to adequately model other types of behavior (SC, MRP, PUBG). <xref ref-type="table" rid="T2" id="177" class="deo:Reference">Table 2</xref> reports the MMD scores. The results are consistent with the previous experiment: models with lower NLL typically obtain lower MMD. One exception is the Hawkes process that achieves low NLL but high MMD on Taxi and Twitter. TriTPP again consistently demonstrates excellent performance. Note that MMD was computed using the test sequences that were unseen during training. This means that TriTPP models the data distribution better than other methods, and does not just simply overfit the training set. In Appendix F.1, we provide additional experiments for quantifying the quality of the distributions learned by different models. Overall, we conclude that TriTPP is flexible and able to model complex densities, in addition to being significantly more efficient than RNN-based TPPs.</region>
+          <outsider class="DoCO:TextBox" type="page_nr" id="170" page="7" column="1">7</outsider>
+          <region class="DoCO:TableBox" id="T1">
+            <caption class="deo:Caption" id="171" page="8" column="1">Table 1: Average test set NLL on synthetic and real-world datasets (lower is better). Best NLL in bold , second best underlined. Results with standard deviations can be found in Appendix F.1.</caption>
+            <content>
+              <table class="DoCO:Table" number="1" page="8">
+                <thead class="table">
+                  <tr class="table">
+                    <th class="table"></th>
+                    <th class="table"> Hawkes1</th>
+                    <th class="table"> Hawkes2</th>
+                    <th class="table"> SC</th>
+                    <th class="table"> IPP</th>
+                    <th class="table"> MRP</th>
+                    <th class="table"> RP</th>
+                    <th class="table"> PUBG</th>
+                    <th class="table"> Reddit-C</th>
+                    <th class="table"> Reddit-S</th>
+                    <th class="table"> Taxi</th>
+                    <th class="table"> Twitter</th>
+                    <th class="table"> Yelp1</th>
+                    <th class="table"> Yelp2</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="table">
+                    <td class="table"> IPP</td>
+                    <td class="table"> 1.06</td>
+                    <td class="table"> 1.03</td>
+                    <td class="table"> 1.00</td>
+                    <td class="table"> 0.71</td>
+                    <td class="table"> 0.70</td>
+                    <td class="table"> 0.89</td>
+                    <td class="table"> -0.06</td>
+                    <td class="table"> -1.59</td>
+                    <td class="table"> -4.08</td>
+                    <td class="table"> -0.68</td>
+                    <td class="table"> 1.60</td>
+                    <td class="table"> 0.62</td>
+                    <td class="table"> -0.05</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> RP</td>
+                    <td class="table"> 0.65</td>
+                    <td class="table"> 0.08</td>
+                    <td class="table"> 0.94</td>
+                    <td class="table"> 0.85</td>
+                    <td class="table"> 0.68</td>
+                    <td class="table"> 0.24</td>
+                    <td class="table"> 0.12</td>
+                    <td class="table"> -2.08</td>
+                    <td class="table"> -4.00</td>
+                    <td class="table"> -0.58</td>
+                    <td class="table"> 1.20</td>
+                    <td class="table"> 0.67</td>
+                    <td class="table"> -0.02</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> MRP</td>
+                    <td class="table"> 0.65</td>
+                    <td class="table"> 0.07</td>
+                    <td class="table"> 0.93</td>
+                    <td class="table"> 0.71</td>
+                    <td class="table"> 0.36</td>
+                    <td class="table"> 0.25</td>
+                    <td class="table"> -0.83</td>
+                    <td class="table"> -2.13</td>
+                    <td class="table"> -4.38</td>
+                    <td class="table"> -0.68</td>
+                    <td class="table"> 1.23</td>
+                    <td class="table"> 0.61</td>
+                    <td class="table"> -0.10</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> Hawkes</td>
+                    <td class="table"> 0.51</td>
+                    <td class="table"> 0.06</td>
+                    <td class="table"> 1.00</td>
+                    <td class="table"> 0.86</td>
+                    <td class="table"> 0.98</td>
+                    <td class="table"> 0.39</td>
+                    <td class="table"> 0.11</td>
+                    <td class="table"> -2.40</td>
+                    <td class="table"> -4.19</td>
+                    <td class="table"> -0.64</td>
+                    <td class="table"> 1.04</td>
+                    <td class="table"> 0.69</td>
+                    <td class="table"> 0.01</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> RNN</td>
+                    <td class="table"> 0.52</td>
+                    <td class="table"> -0.03</td>
+                    <td class="table"> 0.79</td>
+                    <td class="table"> 0.73</td>
+                    <td class="table"> 0.37</td>
+                    <td class="table"> 0.24</td>
+                    <td class="table"> -1.96</td>
+                    <td class="table"> -2.40</td>
+                    <td class="table"> -4.89</td>
+                    <td class="table"> -0.66</td>
+                    <td class="table"> 1.08</td>
+                    <td class="table"> 0.67</td>
+                    <td class="table"> -0.08</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> TriTPP</td>
+                    <td class="table"> 0.56</td>
+                    <td class="table"> 0.00</td>
+                    <td class="table"> 0.83</td>
+                    <td class="table"> 0.71</td>
+                    <td class="table"> 0.35</td>
+                    <td class="table"> 0.24</td>
+                    <td class="table"> -2.41</td>
+                    <td class="table"> -2.36</td>
+                    <td class="table"> -4.49</td>
+                    <td class="table"> -0.67</td>
+                    <td class="table"> 1.06</td>
+                    <td class="table"> 0.64</td>
+                    <td class="table"> -0.09</td>
+                  </tr>
+                </tbody>
+              </table>
+            </content>
+            <region class="TableInfo" id="172" confidence="possible" page="8" column="1">Hawkes1 Hawkes2 SC IPP MRP RP PUBG Reddit-C Reddit-S Taxi Twitter Yelp1 Yelp2 IPP 1.06 1.03 1.00 0.71 0.70 0.89 -0.06 -1.59 -4.08 -0.68 1.60 0.62 -0.05 RP 0.65 0.08 0.94 0.85 0.68 0.24 0.12 -2.08 -4.00 -0.58 1.20 0.67 -0.02 MRP 0.65 0.07 0.93 0.71 0.36 0.25 -0.83 -2.13 -4.38 -0.68 1.23 0.61 -0.10 Hawkes 0.51 0.06 1.00 0.86 0.98 0.39 0.11 -2.40 -4.19 -0.64 1.04 0.69 0.01 RNN 0.52 -0.03 0.79 0.73 0.37 0.24 -1.96 -2.40 -4.89 -0.66 1.08 0.67 -0.08 TriTPP 0.56 0.00 0.83 0.71 0.35 0.24 -2.41 -2.36 -4.49 -0.67 1.06 0.64 -0.09</region>
+          </region>
+          <region class="DoCO:TableBox" id="T2">
+            <caption class="deo:Caption" id="173" page="8" column="1">Table 2: MMD between the hold-out test set and the generated samples (lower is better).</caption>
+            <content>
+              <table class="DoCO:Table" number="2" page="8">
+                <thead class="table">
+                  <tr class="table">
+                    <th class="table"></th>
+                    <th class="table"> Hawkes1</th>
+                    <th class="table"> Hawkes2</th>
+                    <th class="table"> SC</th>
+                    <th class="table"> IPP</th>
+                    <th class="table"> MRP</th>
+                    <th class="table"> RP</th>
+                    <th class="table"> PUBG</th>
+                    <th class="table"> Reddit-C</th>
+                    <th class="table"> Reddit-S</th>
+                    <th class="table"> Taxi</th>
+                    <th class="table"> Twitter</th>
+                    <th class="table"> Yelp1</th>
+                    <th class="table"> Yelp2</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="table">
+                    <td class="table"> IPP</td>
+                    <td class="table"> 0.08</td>
+                    <td class="table"> 0.09</td>
+                    <td class="table"> 0.58</td>
+                    <td class="table"> 0.02</td>
+                    <td class="table"> 0.15</td>
+                    <td class="table"> 0.07</td>
+                    <td class="table"> 0.01</td>
+                    <td class="table"> 0.10</td>
+                    <td class="table"> 0.21</td>
+                    <td class="table"> 0.10</td>
+                    <td class="table"> 0.16</td>
+                    <td class="table"> 0.15</td>
+                    <td class="table"> 0.16</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> RP</td>
+                    <td class="table"> 0.06</td>
+                    <td class="table"> 0.06</td>
+                    <td class="table"> 1.13</td>
+                    <td class="table"> 0.34</td>
+                    <td class="table"> 1.24</td>
+                    <td class="table"> 0.01</td>
+                    <td class="table"> 0.46</td>
+                    <td class="table"> 0.07</td>
+                    <td class="table"> 0.18</td>
+                    <td class="table"> 0.57</td>
+                    <td class="table"> 0.14</td>
+                    <td class="table"> 0.16</td>
+                    <td class="table"> 0.23</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> MRP</td>
+                    <td class="table"> 0.05</td>
+                    <td class="table"> 0.06</td>
+                    <td class="table"> 0.50</td>
+                    <td class="table"> 0.02</td>
+                    <td class="table"> 0.11</td>
+                    <td class="table"> 0.02</td>
+                    <td class="table"> 0.12</td>
+                    <td class="table"> 0.09</td>
+                    <td class="table"> 0.20</td>
+                    <td class="table"> 0.09</td>
+                    <td class="table"> 0.13</td>
+                    <td class="table"> 0.13</td>
+                    <td class="table"> 0.16</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> Hawkes</td>
+                    <td class="table"> 0.02</td>
+                    <td class="table"> 0.04</td>
+                    <td class="table"> 0.58</td>
+                    <td class="table"> 0.36</td>
+                    <td class="table"> 0.65</td>
+                    <td class="table"> 0.05</td>
+                    <td class="table"> 0.16</td>
+                    <td class="table"> 0.04</td>
+                    <td class="table"> 0.35</td>
+                    <td class="table"> 0.20</td>
+                    <td class="table"> 0.20</td>
+                    <td class="table"> 0.20</td>
+                    <td class="table"> 0.32</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> RNN</td>
+                    <td class="table"> 0.01</td>
+                    <td class="table"> 0.02</td>
+                    <td class="table"> 0.19</td>
+                    <td class="table"> 0.09</td>
+                    <td class="table"> 0.17</td>
+                    <td class="table"> 0.01</td>
+                    <td class="table"> 0.23</td>
+                    <td class="table"> 0.04</td>
+                    <td class="table"> 0.09</td>
+                    <td class="table"> 0.13</td>
+                    <td class="table"> 0.08</td>
+                    <td class="table"> 0.19</td>
+                    <td class="table"> 0.18</td>
+                  </tr>
+                  <tr class="table">
+                    <td class="table"> TriTPP</td>
+                    <td class="table"> 0.03</td>
+                    <td class="table"> 0.03</td>
+                    <td class="table"> 0.23</td>
+                    <td class="table"> 0.02</td>
+                    <td class="table"> 0.08</td>
+                    <td class="table"> 0.01</td>
+                    <td class="table"> 0.16</td>
+                    <td class="table"> 0.07</td>
+                    <td class="table"> 0.16</td>
+                    <td class="table"> 0.08</td>
+                    <td class="table"> 0.08</td>
+                    <td class="table"> 0.12</td>
+                    <td class="table"> 0.14</td>
+                  </tr>
+                </tbody>
+              </table>
+            </content>
+            <region class="TableInfo" id="174" confidence="possible" page="8" column="1">Hawkes1 Hawkes2 SC IPP MRP RP PUBG Reddit-C Reddit-S Taxi Twitter Yelp1 Yelp2 IPP 0.08 0.09 0.58 0.02 0.15 0.07 0.01 0.10 0.21 0.10 0.16 0.15 0.16 RP 0.06 0.06 1.13 0.34 1.24 0.01 0.46 0.07 0.18 0.57 0.14 0.16 0.23 MRP 0.05 0.06 0.50 0.02 0.11 0.02 0.12 0.09 0.20 0.09 0.13 0.13 0.16 Hawkes 0.02 0.04 0.58 0.36 0.65 0.05 0.16 0.04 0.35 0.20 0.20 0.20 0.32 RNN 0.01 0.02 0.19 0.09 0.17 0.01 0.23 0.04 0.09 0.13 0.08 0.19 0.18 TriTPP 0.03 0.03 0.23 0.02 0.08 0.01 0.16 0.07 0.16 0.08 0.08 0.12 0.14</region>
+          </region>
+          <region class="DoCO:FigureBox" id="F8">
+            <caption class="deo:Caption" id="179" page="8" column="1">Figure 8: Posterior distributions over the</caption>
+          </region>
+        </section>
+        <section class="DoCO:Section">
+          <h2 class="DoCO:SectionTitle" id="182" page="8" column="1">6.3 Variational inference True MJP trajectory Setup. We apply our variational inference method (Sec- State 1 State 2 State 3 Observed event tion 4.2) for learning the posterior distribution over the latent trajectories of an MMPP. We simulate an MMPP with K = 3 latent states. As a baseline, we use the state- Variational inference of-the-art MCMC sampler by Rao &amp; Teh [<xref ref-type="bibr" rid="R49" id="180" class="deo:Reference">49</xref>]. Results. <xref ref-type="fig" rid="F8" id="181" class="deo:Reference">Figure 8</xref> shows the true latent MJP trajectory, as well as the marginal posterior probabilities learned by our method and the MCMC sampler of Rao &amp; Teh. We can see MCMC that TriTPP accurately recovers the true posterior distribution over the trajectories. The two components that enable our new variational inference approach are our efficient parallel sampling algorithm for TriTPP (Section 3) and the 0 10 20 30 40 50 60 differential relaxation (Section 4). Appendix F.2 contains Time an additional experiment on real-world data, where we both learn the parameters θ and infer the posterior over latent trajectory of an MMPP learned the trajectories. using our VI approach &amp; MCMC.</h2>
+          <region class="DoCO:TextChunk" id="185" confidence="possible" page="8" column="1">Setup. We apply our variational inference method (Section 4.2) for learning the posterior distribution over the latent trajectories of an MMPP. We simulate an MMPP with K = 3 latent states. As a baseline, we use the state- of-the-art MCMC sampler by Rao &amp; Teh [<xref ref-type="bibr" rid="R49" id="183" class="deo:Reference">49</xref>]. Results. <xref ref-type="fig" rid="F8" id="184" class="deo:Reference">Figure 8</xref> shows the true latent MJP trajectory, as well as the marginal posterior probabilities learned by our method and the MCMC sampler of Rao &amp; Teh. We can see that TriTPP accurately recovers the true posterior distribution over the trajectories. The two components that enable our new variational inference approach are our efficient parallel sampling algorithm for TriTPP (Section 3) and the differential relaxation (Section 4). Appendix F.2 contains an additional experiment on real-world data, where we both learn the parameters θ and infer the posterior over the trajectories.</region>
+          <outsider class="DoCO:TextBox" type="page_nr" id="186" page="8" column="1">8</outsider>
+        </section>
+      </section>
+      <section class="deo:Conclusion">
+        <h1 class="DoCO:SectionTitle" id="187" page="9" column="1">7 Future work &amp; conclusions</h1>
+        <region class="DoCO:TextChunk" id="189" page="9" column="1">Future work &amp; limitations. We parametrized the nonlinear transformations of our TPP models with splines. Making a spline more flexible requires increasing the number of knots, which increases the number of parameters and might lead to overfitting. New deep analytically invertible functions will improve both our models, as well as normalizing flows in general. Currently, TriTPP is not applicable to marked TPPs [<xref ref-type="bibr" rid="R5" id="188" class="deo:Reference">5</xref>]. Extending our model to this setting is an important task for future work. Conclusions. We have shown that TPP densities can be represented with increasing triangular maps. By directly parametrizing the respective transformations, we are able to construct TPP models, for which both density evaluation and sampling can be done efficiently in parallel. Using the above framework, we defined TriTPP— a new class of flexible probability distributions over variable-length sequences. In addition to being highly efficient thanks to its parallelism, TriTPP shows excellent performance on density estimation, as shown by our experiments. High flexibility and efficiency of TriTPP allow it to be used as a plug-and-play component of other machine learning models.</region>
+      </section>
+      <section class="DoCO:Section">
+        <h1 class="DoCO:SectionTitle" id="190" page="9" column="1">Broader impact</h1>
+        <region class="DoCO:TextChunk" id="197" page="9" column="1">Existing works have applied TPPs and MJPs for analyzing electronic health records [<xref ref-type="bibr" rid="R61" id="191" class="deo:Reference">61</xref>, <xref ref-type="bibr" rid="R62" id="192" class="deo:Reference">62</xref>], detecting anomalies in network traffic [<xref ref-type="bibr" rid="R63" id="193" class="deo:Reference">63</xref>, <xref ref-type="bibr" rid="R64" id="194" class="deo:Reference">64</xref>] and modeling user behavior on online platforms [<xref ref-type="bibr" rid="R65" id="195" class="deo:Reference">65</xref>, <xref ref-type="bibr" rid="R66" id="196" class="deo:Reference">66</xref>]. Thanks to fast sampling, our model can be used for solving new prediction tasks on such data, and the overall improved scalability allows practitioners to work with larger datasets. We do not find any of the above use cases ethically questionable, though, general precautions must be implemented when handling sensitive personal data. Since our model exploits fast parallel computations, has fewer parameters and converges in fewer iterations, it is likely to be more energy-efficient compared to RNN-based TPPs. However, we haven’t performed experiments analyzing this specific aspect of our model.</region>
+      </section>
+      <section class="deo:Acknowledgements">
+        <h1 class="DoCO:SectionTitle" id="198" page="9" column="1">Acknowledgments</h1>
+        <region class="DoCO:TextChunk" id="199" page="9" column="1">This research was supported by the German Federal Ministry of Education and Research (BMBF), grant no. 01IS18036B, the Software Campus Project Deep-RENT and by the BMW AG. The authors of this work take full responsibilities for its content.</region>
+      </section>
+      <section class="DoCO:Bibliography">
+        <h1 class="DoCO:SectionTitle" id="200" page="9" column="1">References</h1>
+        <ref-list class="DoCO:BiblioGraphicReferenceList">
+          <ref rid="R1" class="deo:BibliographicReference" id="201" page="9" column="1">[1] Nan Du, Hanjun Dai, Rakshit Trivedi, Utkarsh Upadhyay, Manuel Gomez-Rodriguez, and Le Song. Recurrent marked temporal point processes: Embedding event history to vector. In ACM SIGKDD International Conference on Knowledge Discovery and Data Mining , 2016.</ref>
+          <ref rid="R2" class="deo:BibliographicReference" id="202" page="9" column="1">[2] Priyank Jaini, Kira A Selby, and Yaoliang Yu. Sum-of-squares polynomial flow. International Conference on Machine Learning , 2019.</ref>
+          <ref rid="R3" class="deo:BibliographicReference" id="203" page="9" column="1">[3] Conor Durkan, Artur Bekasov, Iain Murray, and George Papamakarios. Neural spline flows. In Advances in Neural Information Processing Systems , 2019.</ref>
+          <ref rid="R4" class="deo:BibliographicReference" id="204" page="9" column="1">[4] Daryl J Daley and David Vere-Jones. An introduction to the theory of point processes. Vol. I. Probability and its applications, 2003.</ref>
+          <ref rid="R5" class="deo:BibliographicReference" id="205" page="9" column="1">[5] Jakob Gulddahl Rasmussen. Temporal point processes: the conditional intensity function. Lecture Notes, Jan , 2011.</ref>
+          <ref rid="R6" class="deo:BibliographicReference" id="206" page="9" column="1">[6] Vladimir Bogachev, Aleksandr Kolesnikov, and Kirill Medvedev. Triangular transformations of measures. Sbornik: Mathematics , 196(3):309, 2005.</ref>
+          <ref rid="R7" class="deo:BibliographicReference" id="207" page="9" column="1">[7] Alan G Hawkes. Spectra of some self-exciting and mutually exciting point processes. Biometrika , 58(1):83–90, 1971.</ref>
+          <ref rid="R8" class="deo:BibliographicReference" id="208" page="9" column="1">[8] David Oakes. The Markovian self-exciting process. Journal of Applied Probability , 12(1):69–77, 1975.</ref>
+          <ref rid="R9" class="deo:BibliographicReference" id="210" page="10" column="1">[9] Angelos Dassios and Hongbiao Zhao. Exact simulation of Hawkes process with exponentially decaying intensity. Electronic Communications in Probability , 18, 2013.</ref>
+          <ref rid="R10" class="deo:BibliographicReference" id="211" page="10" column="1">[10] Takahiro Omi, Naonori Ueda, and Kazuyuki Aihara. Fully neural network based model for general temporal point processes. In Advances in Neural Information Processing Systems , 2019.</ref>
+          <ref rid="R11" class="deo:BibliographicReference" id="212" page="10" column="1">[11] Oleksandr Shchur, Marin Biloš, and Stephan Günnemann. Intensity-free learning of temporal point processes. International Conference on Learning Representations , 2020.</ref>
+          <ref rid="R12" class="deo:BibliographicReference" id="213" page="10" column="1">[12] David Roxbee Cox. Renewal Theory . Methuen, 1962.</ref>
+          <ref rid="R13" class="deo:BibliographicReference" id="214" page="10" column="1">[13] David Roxbee Cox. The statistical analysis of dependencies in point processes. Stochastic Point Processes. Wiley: New York , pages 55–66, 1972.</ref>
+          <ref rid="R14" class="deo:BibliographicReference" id="215" page="10" column="1">[14] Guy E Blelloch. Prefix sums and their applications. Technical report, 1990.</ref>
+          <ref rid="R15" class="deo:BibliographicReference" id="216" page="10" column="1">[15] George Papamakarios, Eric Nalisnick, Danilo Jimenez Rezende, Shakir Mohamed, and Balaji Lakshminarayanan. Normalizing flows for probabilistic modeling and inference. arXiv preprint arXiv:1912.02762 , 2019.</ref>
+          <ref rid="R16" class="deo:BibliographicReference" id="217" page="10" column="1">[16] Valerie Isham and Mark Westcott. A self-correcting point process. Stochastic Processes and Their Applications , 8(3):335–347, 1979.</ref>
+          <ref rid="R17" class="deo:BibliographicReference" id="218" page="10" column="1">[17] Utkarsh Upadhyay, Abir De, and Manuel Gomez Rodriguez. Deep reinforcement learning of marked temporal point processes. In Advances in Neural Information Processing Systems , 2018.</ref>
+          <ref rid="R18" class="deo:BibliographicReference" id="219" page="10" column="1">[18] Shakir Mohamed, Mihaela Rosca, Michael Figurnov, and Andriy Mnih. Monte Carlo gradient estimation in machine learning. arXiv preprint arXiv:1906.10652 , 2019.</ref>
+          <ref rid="R19" class="deo:BibliographicReference" id="220" page="10" column="1">[19] Yves Grandvalet and Yoshua Bengio. Entropy regularization. Semi-supervised learning , pages 151–168, 2006.</ref>
+          <ref rid="R20" class="deo:BibliographicReference" id="221" page="10" column="1">[20] François Baccelli and Jae Oh Woo. On the entropy and mutual information of point processes. In IEEE International Symposium on Information Theory , 2016.</ref>
+          <ref rid="R21" class="deo:BibliographicReference" id="222" page="10" column="1">[21] Eric Jang, Shixiang Gu, and Ben Poole. Categorical reparameterization with Gumbel-softmax. International Conference on Learning Representations , 2017.</ref>
+          <ref rid="R22" class="deo:BibliographicReference" id="223" page="10" column="1">[22] Wolfgang Fischer and Kathleen Meier-Hellstern. The Markov-modulated Poisson process cookbook. Performance Evaluation , 18, 1993.</ref>
+          <ref rid="R23" class="deo:BibliographicReference" id="224" page="10" column="1">[23] Boqian Zhang, Jiangwei Pan, and Vinayak A Rao. Collapsed variational Bayes for Markov jump processes. In Advances in Neural Information Processing Systems , 2017.</ref>
+          <ref rid="R24" class="deo:BibliographicReference" id="225" page="10" column="1">[24] Cheng Zhang, Judith Bütepage, Hedvig Kjellström, and Stephan Mandt. Advances in variational inference. IEEE Transactions on Pattern Analysis and Machine Intelligence , 41(8):2008–2026, 2018.</ref>
+          <ref rid="R25" class="deo:BibliographicReference" id="226" page="10" column="1">[25] Pengyu Wang and Phil Blunsom. Collapsed variational Bayesian inference for hidden Markov models. In Artificial Intelligence and Statistics , 2013.</ref>
+          <ref rid="R26" class="deo:BibliographicReference" id="227" page="10" column="1">[26] William Feller. On semi-markov processes. Proceedings of the National Academy of Sciences of the United States of America , 51(4):653, 1964.</ref>
+          <ref rid="R27" class="deo:BibliographicReference" id="228" page="10" column="1">[27] Mathieu Germain, Karol Gregor, Iain Murray, and Hugo Larochelle. MADE: Masked autoen- coder for distribution estimation. In International Conference on Machine Learning , 2015.</ref>
+          <ref rid="R28" class="deo:BibliographicReference" id="229" page="10" column="1">[28] Durk P Kingma, Tim Salimans, Rafal Jozefowicz, Xi Chen, Ilya Sutskever, and Max Welling. Improved variational inference with inverse autoregressive flow. In Advances in Neural Information Processing Systems , 2016.</ref>
+          <ref rid="R29" class="deo:BibliographicReference" id="230" page="10" column="1">[29] Laurent Dinh, Jascha Sohl-Dickstein, and Samy Bengio. Density estimation using Real NVP. International Conference on Learning Representations , 2017.</ref>
+          <ref rid="R30" class="deo:BibliographicReference" id="231" page="10" column="1">[30] George Papamakarios, Theo Pavlakou, and Iain Murray. Masked autoregressive flow for density estimation. In Advances in Neural Information Processing Systems , 2017.</ref>
+          <ref rid="R31" class="deo:BibliographicReference" id="233" page="11" column="1">[31] Aaron van den Oord, Sander Dieleman, Heiga Zen, Karen Simonyan, Oriol Vinyals, Alex Graves, Nal Kalchbrenner, Andrew Senior, and Koray Kavukcuoglu. Wavenet: A generative model for raw audio. arXiv preprint arXiv:1609.03499 , 2016.</ref>
+          <ref rid="R32" class="deo:BibliographicReference" id="234" page="11" column="1">[32] Aaron Van den Oord, Nal Kalchbrenner, Lasse Espeholt, Oriol Vinyals, Alex Graves, et al. Conditional image generation with PixelCNN decoders. In Advances in Neural Information Processing Systems , 2016.</ref>
+          <ref rid="R33" class="deo:BibliographicReference" id="235" page="11" column="1">[33] Erhan Çinlar. Introduction to Stochastic Processes . Prentice-Hall, 1975.</ref>
+          <ref rid="R34" class="deo:BibliographicReference" id="236" page="11" column="1">[34] Raghu Pasupathy. Generating nonhomogeneous Poisson processes. Wiley Encyclopedia of Operations Research and Management Science , 2010.</ref>
+          <ref rid="R35" class="deo:BibliographicReference" id="237" page="11" column="1">[35] PA W Lewis and Gerald S Shedler. Simulation of nonhomogeneous Poisson processes by thinning. Naval research logistics quarterly , 26(3):403–413, 1979.</ref>
+          <ref rid="R36" class="deo:BibliographicReference" id="238" page="11" column="1">[36] Ali Caner Türkmen, Yuyang Wang, and Alexander J Smola. Fastpoint: Scalable deep point processes. In Joint European Conference on Machine Learning and Knowledge Discovery in Databases , 2019.</ref>
+          <ref rid="R37" class="deo:BibliographicReference" id="239" page="11" column="1">[37] David Roxbee Cox. The statistical analysis of series of events. Monographs on Applied Probability and Statistics , 1966.</ref>
+          <ref rid="R38" class="deo:BibliographicReference" id="240" page="11" column="1">[38] David R Cox. Some statistical methods connected with series of events. Journal of the Royal Statistical Society: Series B (Methodological) , 17(2):129–157, 1955.</ref>
+          <ref rid="R39" class="deo:BibliographicReference" id="241" page="11" column="1">[39] Ryan Prescott Adams, Iain Murray, and David JC MacKay. Tractable nonparametric Bayesian inference in Poisson processes with Gaussian process intensities. In International Conference on Machine Learning , 2009.</ref>
+          <ref rid="R40" class="deo:BibliographicReference" id="242" page="11" column="1">[40] Christian Donner and Manfred Opper. Efficient Bayesian inference of sigmoidal Gaussian Cox processes. The Journal of Machine Learning Research , 19, 2018.</ref>
+          <ref rid="R41" class="deo:BibliographicReference" id="243" page="11" column="1">[41] Lucy Morgan, Barry Nelson, Andrew Titman, and David Worthington. A spline-based method for modelling and generating a nonhomogeneous poisson process. In Winter Simulation Conference , 2019.</ref>
+          <ref rid="R42" class="deo:BibliographicReference" id="244" page="11" column="1">[42] Mark Berman. Inhomogeneous and modulated gamma processes. Biometrika , 68(1):143–152, 1981.</ref>
+          <ref rid="R43" class="deo:BibliographicReference" id="245" page="11" column="1">[43] Vinayak Rao and Yee W Teh. Gaussian process modulated renewal processes. In Advances in Neural Information Processing Systems , 2011.</ref>
+          <ref rid="R44" class="deo:BibliographicReference" id="246" page="11" column="1">[44] Thomas A Lasko. Efficient inference of Gaussian-process-modulated renewal processes with application to medical event data. In Conference on Uncertainty in Artificial Intelligence , 2014.</ref>
+          <ref rid="R45" class="deo:BibliographicReference" id="247" page="11" column="1">[45] Hongyuan Mei and Jason M Eisner. The neural Hawkes process: A neurally self-modulating multivariate point process. In Advances in Neural Information Processing Systems , 2017.</ref>
+          <ref rid="R46" class="deo:BibliographicReference" id="248" page="11" column="1">[46] Marin Biloš, Bertrand Charpentier, and Stephan Günnemann. Uncertainty on asynchronous time event prediction. In Advances in Neural Information Processing Systems , 2019.</ref>
+          <ref rid="R47" class="deo:BibliographicReference" id="249" page="11" column="1">[47] Marcel Hirt and Petros Dellaportas. Scalable bayesian learning for state space models using variational inference with smc samplers. International Conference on Artificial Intelligence and Statistics , 2019.</ref>
+          <ref rid="R48" class="deo:BibliographicReference" id="250" page="11" column="1">[48] Jing Wu, Owen Ward, James Curley, and Tian Zheng. Markov-modulated Hawkes processes for sporadic and bursty event occurrences. arXiv preprint arXiv:1903.03223 , 2019.</ref>
+          <ref rid="R49" class="deo:BibliographicReference" id="251" page="11" column="1">[49] Vinayak Rao and Yee Whye Teh. Fast MCMC sampling for Markov jump processes and extensions. The Journal of Machine Learning Research , 14, 2013.</ref>
+          <ref rid="R50" class="deo:BibliographicReference" id="252" page="11" column="1">[50] Boqian Zhang and Vinayak Rao. Efficient parameter sampling for Markov jump processes. arXiv preprint arXiv:1704.02369 , 2019.</ref>
+          <ref rid="R51" class="deo:BibliographicReference" id="254" page="12" column="1">[51] Manfred Opper and Guido Sanguinetti. Variational inference for Markov jump processes. In Advances in Neural Information Processing Systems , 2008.</ref>
+          <ref rid="R52" class="deo:BibliographicReference" id="255" page="12" column="1">[52] Christian Wildner and Heinz Koeppl. Moment-based variational inference for Markov jump processes. International Conference on Machine Learning , 2019.</ref>
+          <ref rid="R53" class="deo:BibliographicReference" id="256" page="12" column="1">[53] Adam Paszke, Sam Gross, Francisco Massa, Adam Lerer, James Bradbury, Gregory Chanan, Trevor Killeen, Zeming Lin, Natalia Gimelshein, Luca Antiga, et al. Pytorch: An imperative style, high-performance deep learning library. In Advances in Neural Information Processing Systems , 2019.</ref>
+          <ref rid="R54" class="deo:BibliographicReference" id="257" page="12" column="1">[54] Qiang Zhang, Aldo Lipani, Omer Kirnap, and Emine Yilmaz. Self-attentive hawkes process. International Conference on Machine Learning, 2020.</ref>
+          <ref rid="R55" class="deo:BibliographicReference" id="258" page="12" column="1">[55] Simiao Zuo, Haoming Jiang, Zichong Li, Tuo Zhao, and Hongyuan Zha. Transformer hawkes process. International Conference on Machine Learning, 2020.</ref>
+          <ref rid="R56" class="deo:BibliographicReference" id="259" page="12" column="1">[56] E. Bacry, M. Bompaire, S. Gaïffas, and S. Poulsen. tick: a Python library for statistical learning, with a particular emphasis on time-dependent modeling. arXiv preprint arXiv:1707.03003 , 2017.</ref>
+          <ref rid="R57" class="deo:BibliographicReference" id="260" page="12" column="1">[57] Diederik P Kingma and Jimmy Ba. Adam: A method for stochastic optimization. International Conference on Learning Representations , 2015.</ref>
+          <ref rid="R58" class="deo:BibliographicReference" id="261" page="12" column="1">[58] Lucas Theis, Aäron van den Oord, and Matthias Bethge. A note on the evaluation of generative models. International Conference on Learning Representations , 2016.</ref>
+          <ref rid="R59" class="deo:BibliographicReference" id="262" page="12" column="1">[59] Arthur Gretton, Karsten M Borgwardt, Malte J Rasch, Bernhard Schölkopf, and Alexander Smola. A kernel two-sample test. Journal of Machine Learning Research , 13, 2012.</ref>
+          <ref rid="R60" class="deo:BibliographicReference" id="263" page="12" column="1">[60] Shuai Xiao, Mehrdad Farajtabar, Xiaojing Ye, Junchi Yan, Le Song, and Hongyuan Zha. Wasser- stein learning of deep generative point process models. In Advances in Neural Information Processing Systems , 2017.</ref>
+          <ref rid="R61" class="deo:BibliographicReference" id="264" page="12" column="1">[61] Ahmed M Alaa and Mihaela Van Der Schaar. A hidden absorbing semi-markov model for informatively censored temporal data: Learning and inference. The Journal of Machine Learning Research , 19(1):108–169, 2018.</ref>
+          <ref rid="R62" class="deo:BibliographicReference" id="265" page="12" column="1">[62] Qi Cao, Erik Buskens, Talitha Feenstra, Tiny Jaarsma, Hans Hillege, and Douwe Postmus. Continuous-time semi-markov models in health economic decision making: an illustrative example in heart failure disease management. Medical Decision Making , 36(1):59–71, 2016.</ref>
+          <ref rid="R63" class="deo:BibliographicReference" id="266" page="12" column="1">[63] Alexander Ihler, Jon Hutchins, and Padhraic Smyth. Learning to detect events with markov- modulated poisson processes. ACM Transactions on Knowledge Discovery from Data , 1(3), 2007.</ref>
+          <ref rid="R64" class="deo:BibliographicReference" id="267" page="12" column="1">[64] Ping Yan, Timothy Schoenharl, Alec Pawling, and Greg Madey. Anomaly detection in the WIPER system using Markov modulated Poisson process. 2007.</ref>
+          <ref rid="R65" class="deo:BibliographicReference" id="268" page="12" column="1">[65] Manuel Gomez Rodriguez, David Balduzzi, and Bernhard Schölkopf. Uncovering the temporal dynamics of diffusion networks. International Conference on Machine Learning , 2011.</ref>
+          <ref rid="R66" class="deo:BibliographicReference" id="269" page="12" column="1">[66] Charalampos Mavroforakis, Isabel Valera, and Manuel Gomez-Rodriguez. Modeling the dynamics of learning activity on the web. In International Conference on World Wide Web , 2017.</ref>
+          <ref rid="R67" class="deo:BibliographicReference" id="270" page="12" column="1">[67] Vinayak Rao and Yee W. Teh. MCMC for continuous-time discrete-state systems. In Advances in Neural Information Processing Systems , 2012.</ref>
+        </ref-list>
+        <outsider class="DoCO:TextBox" type="page_nr" id="209" page="9" column="1">9</outsider>
+        <outsider class="DoCO:TextBox" type="page_nr" id="232" page="10" column="1">10</outsider>
+        <outsider class="DoCO:TextBox" type="page_nr" id="253" page="11" column="1">11</outsider>
+        <outsider class="DoCO:TextBox" type="page_nr" id="271" page="12" column="1">12</outsider>
+      </section>
+    </body>
+  </article>
+</pdfx>
