@@ -4,7 +4,7 @@ Code that scraps the contents of the PDF papers submitted for [NeurIPS 2020](htt
 ## Functions Available
 This repository seeks to accomplish the following tasks:
 * Download all the PDFs submitted for NeurIPS 2020
-* Convert the PDFs to 
+* Convert the PDFs to XML using [PDFx](http://pdfx.cs.man.ac.uk/)
 * Scrap useful information from the XML files
 
 ## Background
