@@ -131,3 +131,6 @@ dmypy.json
 #xml files
 /xml/*.xml
 !/xml/sample.xml
+
+#csv files
+output.csv
