@@ -133,4 +133,4 @@ dmypy.json
 !/xml/sample.xml
 
 #csv files
-output.csv
+*.csv
