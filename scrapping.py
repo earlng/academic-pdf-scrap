@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 
 directory="xml"
 impact_dict={"title":[], "paper identifier":[], "paper link":[], "impact statement":[], "impact title":[], "impact statement word count":[], "impact statement sentence count":[], "citation count":[],
-            "has positive":[], "has negative":[], "has opt out":[], "has NA":[]}
+            "has positive":[], "has negative":[], "has opt out":[], "has NA":[], "has impact statement":[]}
 
 #initialize citations_dict, which is a separate dictionary to be generated as a separate CSV file (citation.csv)
 citation_dict={"paper title":[],"paper id":[],"citation":[]}
@@ -25,6 +25,8 @@ for filename in os.listdir(directory):
         #get article title
         #initialize a list of citations for this document
         citation_ref = []
+        #signals if impact statement exists
+        has_impact_statement = "False"
         for section in root[1][0][0]:
             if section.tag=="article-title":
                 title = section.text
@@ -57,6 +59,7 @@ for filename in os.listdir(directory):
                     has_opt_out = "True" if "this work does not present any foreseeable societal consequence" in impact_statement_text.lower() else "False"
                     #check if it has "Not Applicable"
                     has_NA = "True" if "not applicable" in impact_statement_text.lower() else "False"
+                    has_impact_statement = "True"
                     #add everything to the dictionary
                     impact_dict["impact title"].append(impact_statement_title)
                     impact_dict["impact statement"].append(impact_statement_text)
@@ -70,6 +73,7 @@ for filename in os.listdir(directory):
                     impact_dict["has negative"].append(has_negative)
                     impact_dict["has opt out"].append(has_opt_out)
                     impact_dict["has NA"].append(has_NA)
+                    impact_dict["has impact statement"].append(has_impact_statement)
                     signal = 0
                     #print(citation_ref)
                 #focus on heading
@@ -100,6 +104,33 @@ for filename in os.listdir(directory):
                                     citation_dict["citation"].append(citation.text)
                             except KeyError:
                                 continue
+        if has_impact_statement == "False":
+            #no impact statement was found at all
+            #set variables
+            impact_statement_title = ""
+            impact_statement_text = ""
+            impact_statement_number_of_words = 0
+            impact_statement_number_of_sentences = 0
+            citations = 0
+            paper_identifier = re.search("(\w*)(-Paper)", filename)
+            has_positive = "False"
+            has_negative = "False"
+            has_opt_out = "False"
+            has_NA = "False"
+            #append to dictionary
+            impact_dict["impact title"].append(impact_statement_title)
+            impact_dict["impact statement"].append(impact_statement_text)
+            impact_dict["impact statement word count"].append(impact_statement_number_of_words)
+            impact_dict["impact statement sentence count"].append(impact_statement_number_of_sentences)
+            impact_dict["citation count"].append(citations)
+            impact_dict["title"].append(title)
+            impact_dict["paper identifier"].append(paper_identifier[1])
+            impact_dict["paper link"].append("https://proceedings.neurips.cc/paper/2020/file/" + paper_identifier[1] + "-Paper.pdf")
+            impact_dict["has positive"].append(has_positive)
+            impact_dict["has negative"].append(has_negative)
+            impact_dict["has opt out"].append(has_opt_out)
+            impact_dict["has NA"].append(has_NA)
+            impact_dict["has impact statement"].append(has_impact_statement)
 
 #create the dataframe for the output from the dictionary
 impact_statements =pd.DataFrame.from_dict(impact_dict)
