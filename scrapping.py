@@ -77,17 +77,18 @@ for filename in os.listdir(directory):
                     signal = 0
                     #print(citation_ref)
                 #focus on heading
-                if "impact" in str(child.text).lower() and child.tag == "h1":
+                if "impact" in str(child.text).lower() and (child.tag == "h1" or child.tag == "h2"):
                     #print("It has a Broader Impact!")
                     #log the title of the broader impact statement
                     impact_statement_title = child.text
                     signal=1
-                elif str(child.text).lower() == "broader impact" and child.tag == "h1":
+                elif str(child.text).lower() == "broader impact" and (child.tag == "h1" or child.tag == "h2"):
                     impact_statement_title = child.text
                     signal=1
-                elif str(child.text).lower() == "broader impacts" and child.tag == "h1":
+                elif str(child.text).lower() == "broader impacts" and (child.tag == "h1" or child.tag == "h2"):
                     impact_statement_title = child.text
                     signal=1
+                #insert a new for loop here to check for the "smaller" parts. The "h2" headers
             #identify the bibliography
             if section.attrib["class"] == "DoCO:Bibliography":
                 #loop through the bibliography section, but we really only want one part
