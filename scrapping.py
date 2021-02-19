@@ -117,6 +117,8 @@ for filename in os.listdir(directory):
         
         #bring the variable assignment down here instead
         if impact_statement_text != "":
+            #remove double spaces
+            impact_statement_text = re.sub('\s+',' ',impact_statement_text)
             impact_statement_number_of_words=len(impact_statement_text.split())
             #add count for setences using delimeters of ".", "?", and "!"
             impact_statement_number_of_sentences=len(re.split("\.|\?|!", impact_statement_text))-1
