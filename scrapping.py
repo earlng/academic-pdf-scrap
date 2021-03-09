@@ -82,6 +82,8 @@ for filename in os.listdir(directory):
                         try:
                             if smaller.itertext() != "" and (smaller.attrib["class"] == "DoCO:TextChunk" or smaller.attrib["class"] == "DoCO:TextBox") and not("type" in smaller.attrib.keys()):
                                 impact_statement_text=impact_statement_text + " "+''.join(smaller.itertext())
+                            elif smaller.attrib["ref-type"] == "bibr":
+                                continue
                             else:
                                 signal = 0
                         except KeyError:
