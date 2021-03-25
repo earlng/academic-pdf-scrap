@@ -16,7 +16,7 @@ impact_dict={"title":[], "paper identifier":[], "paper link":[], "impact stateme
 citation_dict={"paper title":[],"paper id":[],"citation":[]}
 
 #filename is whatever file we want to test.
-filename="48f7d3043bc03e6c48a6f0ebc0f258a8"
+filename="4496bf24afe7fab6f046bf4923da8de6"
 full_filename=filename+"-Paper.pdfx.xml"
 
 full_path = os.path.join(directory, full_filename)
@@ -48,15 +48,21 @@ for section in root[1][1]:
                     #use "rid" as the identifier, so we come out of this with a list of references
                     citation_ref.append(xref.attrib['rid'])
                     citations +=1
+                    print("CITATIONS")
             #itertext will make sure that if there are any tags within the section, we still get the whole thing.
             #impact_statement_text will become whatever the current value of it is, plus whatever the for loop finds so long as it is true
-            print(child)
-            if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox"):
+            print(child.attrib)
+            if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox" or child.attrib["class"] == "unknown"):
                 #so it captures the text so long as there is text in the section
                 print(''.join(child.itertext()))
                 print("LOOP")
                 impact_statement_text=impact_statement_text + " "+''.join(child.itertext())
             else:
+                print(child.attrib["class"])
+                print(''.join(child.itertext()), "[this is text]")
+                if child.itertext() !="":
+                    print(child.itertext())
+                print("Broke 001")
                 signal = 0
         #focus on heading
         if "impact" in str(child.text).lower() and child.tag == "h1":
@@ -76,7 +82,7 @@ for section in root[1][1]:
             #print(section.text)
             #broader_dict[filename] = section.text
             #loop through any xrefs to count for citations
-                print(''.join(smaller.itertext()), smaller.attrib["ref-type"])
+                #print(''.join(smaller.itertext()), smaller.attrib["ref-type"])
                 for xref in smaller:
                     #narrow down xref citations to bibliography references
                     if xref.tag == "xref" and xref.attrib['ref-type'] == "bibr":
