@@ -48,7 +48,7 @@ for filename in os.listdir(directory):
                             citations +=1
                     #itertext will make sure that if there are any tags within the section, we still get the whole thing.
                     #impact_statement_text will become whatever the current value of it is, plus whatever the for loop finds so long as it is true
-                    if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox"):
+                    if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox" or child.attrib["class"] == "unknown"):
                         #so it captures the text so long as there is text in the section
                         impact_statement_text=impact_statement_text + " "+''.join(child.itertext())
                     else:
