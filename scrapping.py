@@ -48,7 +48,7 @@ for filename in os.listdir(directory):
                             citations +=1
                     #itertext will make sure that if there are any tags within the section, we still get the whole thing.
                     #impact_statement_text will become whatever the current value of it is, plus whatever the for loop finds so long as it is true
-                    if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox") and not("type" in child.attrib.keys()):
+                    if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox"):
                         #so it captures the text so long as there is text in the section
                         impact_statement_text=impact_statement_text + " "+''.join(child.itertext())
                     else:
@@ -80,7 +80,7 @@ for filename in os.listdir(directory):
                         #itertext will make sure that if there are any tags within the section, we still get the whole thing.
                         #if smaller.itertext() != "" and (smaller.attrib["class"] == "DoCO:TextChunk" or smaller.attrib["class"] == "DoCO:TextBox"):
                         try:
-                            if smaller.itertext() != "" and (smaller.attrib["class"] == "DoCO:TextChunk" or smaller.attrib["class"] == "DoCO:TextBox") and not("type" in smaller.attrib.keys()):
+                            if smaller.itertext() != "" and (smaller.attrib["class"] == "DoCO:TextChunk" or smaller.attrib["class"] == "DoCO:TextBox"):
                                 impact_statement_text=impact_statement_text + " "+''.join(smaller.itertext())
                             elif smaller.attrib["ref-type"] == "bibr":
                                 continue

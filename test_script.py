@@ -16,7 +16,7 @@ impact_dict={"title":[], "paper identifier":[], "paper link":[], "impact stateme
 citation_dict={"paper title":[],"paper id":[],"citation":[]}
 
 #filename is whatever file we want to test.
-filename="0169cf885f882efd795951253db5cdfb"
+filename="48f7d3043bc03e6c48a6f0ebc0f258a8"
 full_filename=filename+"-Paper.pdfx.xml"
 
 full_path = os.path.join(directory, full_filename)
@@ -51,7 +51,7 @@ for section in root[1][1]:
             #itertext will make sure that if there are any tags within the section, we still get the whole thing.
             #impact_statement_text will become whatever the current value of it is, plus whatever the for loop finds so long as it is true
             print(child)
-            if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox") and not("type" in child.attrib.keys()):
+            if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox"):
                 #so it captures the text so long as there is text in the section
                 print(''.join(child.itertext()))
                 print("LOOP")
@@ -86,7 +86,7 @@ for section in root[1][1]:
                 #itertext will make sure that if there are any tags within the section, we still get the whole thing.
                 #if smaller.itertext() != "" and (smaller.attrib["class"] == "DoCO:TextChunk" or smaller.attrib["class"] == "DoCO:TextBox"):
                 try:
-                    if smaller.itertext() != "" and (smaller.attrib["class"] == "DoCO:TextChunk" or smaller.attrib["class"] == "DoCO:TextBox") and not("type" in smaller.attrib.keys()):
+                    if smaller.itertext() != "" and (smaller.attrib["class"] == "DoCO:TextChunk" or smaller.attrib["class"] == "DoCO:TextBox"):
                         impact_statement_text=impact_statement_text + " "+''.join(smaller.itertext())
                     elif smaller.attrib["ref-type"] == "bibr":
                         continue
