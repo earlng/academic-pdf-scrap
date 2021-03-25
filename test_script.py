@@ -16,7 +16,7 @@ impact_dict={"title":[], "paper identifier":[], "paper link":[], "impact stateme
 citation_dict={"paper title":[],"paper id":[],"citation":[]}
 
 #filename is whatever file we want to test.
-filename="4496bf24afe7fab6f046bf4923da8de6"
+filename="cdfa4c42f465a5a66871587c69fcfa34"
 full_filename=filename+"-Paper.pdfx.xml"
 
 full_path = os.path.join(directory, full_filename)
@@ -52,7 +52,7 @@ for section in root[1][1]:
             #itertext will make sure that if there are any tags within the section, we still get the whole thing.
             #impact_statement_text will become whatever the current value of it is, plus whatever the for loop finds so long as it is true
             print(child.attrib)
-            if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox" or child.attrib["class"] == "unknown"):
+            if child.itertext() != "" and (child.attrib["class"] == "DoCO:TextChunk" or child.attrib["class"] == "DoCO:TextBox" or child.attrib["class"] == "unknown" or child.attrib["class"] == "DoCO:Section"):
                 #so it captures the text so long as there is text in the section
                 print(''.join(child.itertext()))
                 print("LOOP")
