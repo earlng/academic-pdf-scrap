@@ -3,6 +3,10 @@ import os
 import re
 import numpy as np
 import xml.etree.ElementTree as ET
+import nltk
+
+nltk.download('punkt')
+from nltk.tokenize import sent_tokenize
 
 #The purpose of this file is to take XML files found in the `/xml` directory, and produce a csv output (`output.csv`)
 
@@ -123,7 +127,7 @@ for filename in os.listdir(directory):
             impact_statement_text = re.sub('\s+',' ',impact_statement_text)
             impact_statement_number_of_words=len(impact_statement_text.split())
             #add count for setences using delimeters of ".", "?", and "!"
-            impact_statement_number_of_sentences=len(re.split("\.|\?|!", impact_statement_text))-1
+            impact_statement_number_of_sentences=len(sent_tokenize(impact_statement_text))
             #will identify the hash based off of this pattern "86d7c8a08b4aaa1bc7c599473f5dddda-Paper.pdfx.xml"
             paper_identifier = re.search("(\w*)(-Paper)", filename)
             #check if "positive" is in the statement

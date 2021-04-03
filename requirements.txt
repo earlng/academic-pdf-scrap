@@ -5,3 +5,4 @@ wordcloud
 scikit-learn
 seaborn
 pyLDAvis
+nltk
