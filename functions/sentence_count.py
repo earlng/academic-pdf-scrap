@@ -25,8 +25,8 @@ final_output=[]
 
 for entry in statements:
     number_of_sentences = len(sent_tokenize(statements[entry]["bis"]))
-    number_of_eg = statements[entry]["bis"].count("e.g.")
-    number_of_ie = statements[entry]["bis"].count("i.e.")
+    number_of_eg = statements[entry]["bis"].count("e.g. ")
+    number_of_ie = statements[entry]["bis"].count("i.e. ")
     number_of_sentences_safe = number_of_sentences - (number_of_eg + number_of_ie)
     entry = {"identifier": entry, "bis": statements[entry]["bis"], "sentence count": number_of_sentences, "sentence count safe": number_of_sentences_safe}
     final_output.append(entry)
