@@ -1,5 +1,5 @@
 # academic-pdf-scrap
-Code that scraps the contents of the PDF papers submitted for [NeurIPS 2020](https://proceedings.neurips.cc/paper/2020)
+Code that scrapes the contents of the PDF papers submitted for [NeurIPS 2020](https://proceedings.neurips.cc/paper/2020)
 
 ## Functions Available
 This repository seeks to accomplish the following tasks:
